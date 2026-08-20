@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#000000">
+<title>歌词库</title>
+<style>
+:root {
+  --bg: #000;
+  --card: #1c1c1e;
+  --border: #2c2c2e;
+  --text: #fff;
+  --sub: #8e8e93;
+  --blue: #0a84ff;
+  --red: #ff453a;
+  --green: #30d158;
+  --yellow: #ffd60a;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.4;
+  padding-bottom: calc(70px + var(--safe-bottom));
+  -webkit-font-smoothing: antialiased;
+}
+.header {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  padding: 14px 16px 10px;
+  border-bottom: 0.5px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.header h1 { font-size: 20px; font-weight: 700; }
+.lang {
+  background: var(--card); border: none; color: var(--blue);
+  font-size: 15px; font-weight: 500; padding: 6px 12px; border-radius: 16px;
+}
+.page { display: none; padding: 16px; max-width: 500px; margin: 0 auto; }
+.page.active { display: block; }
+.section { margin-bottom: 24px; }
+.section-title {
+  font-size: 13px; color: var(--sub); text-transform: uppercase;
+  letter-spacing: 0.5px; margin-bottom: 10px; padding-left: 4px;
+}
+.input {
+  width: 100%; background: var(--card); border: none; border-radius: 12px;
+  padding: 14px 16px; color: var(--text); font-size: 16px; margin-bottom: 10px; outline: none;
+}
+.input:focus { box-shadow: 0 0 0 2px var(--blue); }
+textarea.input { min-height: 120px; resize: none; line-height: 1.5; }
+.btn {
+  display: block; width: 100%; background: var(--blue); color: #fff;
+  border: none; border-radius: 12px; padding: 15px; font-size: 16px; font-weight: 600; margin-top: 8px;
+}
+.btn:active { opacity: 0.8; }
+.btn:disabled { opacity: 0.45; }
+.btn-ghost { background: var(--card); color: var(--text); }
+.btn-red {
+  background: transparent; border: 1px solid var(--red); color: var(--red);
+  width: auto; display: inline-block; padding: 8px 16px; font-size: 14px;
+}
+.btn-sm { width: auto; display: inline-block; padding: 8px 14px; font-size: 14px; margin: 0; }
+.status {
+  margin-top: 12px; padding: 12px; border-radius: 10px; font-size: 14px; display: none;
+}
+.status.show { display: block; }
+.status.err { background: rgba(255,69,58,0.15); color: #ff6961; }
+.status.ok { background: rgba(48,209,88,0.15); color: #30d158; }
+.list { margin-top: 12px; }
+.item {
+  background: var(--card); border-radius: 12px; padding: 14px 16px; margin-bottom: 8px;
+  display: flex; justify-content: space-between; align-items: center; gap: 10px;
+}
+.item-info { flex: 1; min-width: 0; }
+.item h3 { font-size: 16px; font-weight: 500; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.item p { font-size: 13px; color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.star { font-size: 20px; color: var(--sub); padding: 4px; }
+.star.on { color: var(--yellow); }
+.tag {
+  display: inline-block; background: #333; color: var(--sub);
+  font-size: 11px; padding: 2px 8px; border-radius: 6px; margin-top: 4px;
+}
+.lyrics-card {
+  background: var(--card); border-radius: 14px; padding: 18px; margin-top: 16px; display: none;
+}
+.lyrics-card.show { display: block; }
+.lyrics-top {
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 14px;
+}
+.lyrics-top h2 { font-size: 18px; font-weight: 600; }
+.lyrics-top p { font-size: 14px; color: var(--sub); margin-top: 2px; }
+.lyrics-body { white-space: pre-wrap; font-size: 16px; line-height: 1.75; color: #e5e5e5; }
+.empty { text-align: center; padding: 60px 20px; color: var(--sub); }
+.empty .icon { font-size: 40px; margin-bottom: 12px; }
+.back { color: var(--blue); font-size: 16px; margin-bottom: 18px; display: inline-flex; align-items: center; gap: 4px; }
+.view-title { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+.view-artist { font-size: 15px; color: var(--sub); margin-bottom: 8px; }
+.font-row { display: flex; align-items: center; gap: 10px; margin: 16px 0; }
+.font-row button {
+  width: 44px; height: 44px; border-radius: 10px; background: var(--card);
+  border: none; color: var(--text); font-size: 18px;
+}
+.view-body { white-space: pre-wrap; font-size: 17px; line-height: 1.85; color: #e8e8e8; }
+.tabbar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: rgba(28,28,30,0.92);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border-top: 0.5px solid var(--border);
+  display: flex; padding-bottom: var(--safe-bottom); z-index: 100;
+}
+.tab {
+  flex: 1; text-align: center; padding: 10px 0 8px; color: var(--sub);
+  font-size: 10px; background: none; border: none;
+}
+.tab.active { color: var(--blue); }
+.tab .icon { font-size: 22px; display: block; margin-bottom: 2px; }
+.filter-row {
+  display: flex; gap: 8px; overflow-x: auto; padding-bottom: 12px; margin-bottom: 8px;
+  -webkit-overflow-scrolling: touch;
+}
+.chip {
+  flex-shrink: 0; background: var(--card); border: none; color: var(--sub);
+  padding: 7px 14px; border-radius: 20px; font-size: 13px;
+}
+.chip.on { background: var(--blue); color: #fff; }
+.row { display: flex; gap: 8px; margin-bottom: 10px; }
+.row .input { margin-bottom: 0; }
+.select {
+  width: 100%; background: var(--card); border: none; border-radius: 12px;
+  padding: 14px 16px; color: var(--text); font-size: 16px; outline: none;
+  appearance: none; -webkit-appearance: none;
+}
+.actions { display: flex; gap: 10px; margin: 12px 0; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1 id="appTitle">歌词库</h1>
+  <button class="lang" id="langBtn">EN</button>
+</div>
+
+<!-- 搜索页 -->
+<div id="pageSearch" class="page active">
+  <div class="section">
+    <div class="section-title" id="secSearch">在线搜索</div>
+    <input class="input" id="q" placeholder="歌名 / 歌手名" enterkeyhint="search">
+    <button class="btn" id="btnSearch">搜索</button>
+    <div class="status" id="statusSearch"></div>
+    <div class="list" id="resultList"></div>
+    <div class="lyrics-card" id="lyricsCard">
+      <div class="lyrics-top">
+        <div>
+          <h2 id="cardTitle"></h2>
+          <p id="cardArtist"></p>
+        </div>
+        <button class="btn btn-sm" id="btnSave">保存</button>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <select class="select" id="cardCat" style="flex:1">
+          <option value="">无分类</option>
+        </select>
+        <button class="star" id="cardStar" style="font-size:24px;background:none;border:none">☆</button>
+      </div>
+      <div class="lyrics-body" id="cardLyrics"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title" id="secManual">手动添加</div>
+    <input class="input" id="mArtist" placeholder="歌手">
+    <input class="input" id="mTitle" placeholder="歌名">
+    <textarea class="input" id="mLyrics" placeholder="粘贴歌词"></textarea>
+    <div class="row">
+      <select class="select" id="mCat" style="flex:1">
+        <option value="">无分类</option>
+      </select>
+      <button class="star" id="mStar" style="font-size:24px;background:none;border:none">☆</button>
+    </div>
+    <button class="btn btn-ghost" id="btnManual">保存到歌词库</button>
+    <div class="status" id="statusManual"></div>
+  </div>
+</div>
+
+<!-- 我的歌词 -->
+<div id="pageLibrary" class="page">
+  <input class="input" id="libQ" placeholder="搜索标题 / 歌手 / 歌词">
+  <div class="filter-row" id="filterRow">
+    <button class="chip on" data-filter="all">全部</button>
+    <button class="chip" data-filter="fav">收藏</button>
+  </div>
+  <div class="list" id="libList"></div>
+  <div class="empty" id="empty" style="display:none">
+    <div class="icon">🎤</div>
+    <div id="emptyText">还没有歌词</div>
+  </div>
+</div>
+
+<!-- 查看 -->
+<div id="pageView" class="page">
+  <div class="back" id="btnBack">‹ 返回</div>
+  <div class="view-title" id="vTitle"></div>
+  <div class="view-artist" id="vArtist"></div>
+  <div id="vTag" class="tag" style="display:none;margin-bottom:12px"></div>
+  <div class="actions">
+    <button class="star" id="vStar" style="font-size:24px;background:none;border:none">☆</button>
+    <button class="btn-red" id="btnDel">删除</button>
+  </div>
+  <div class="font-row">
+    <span style="color:var(--sub);font-size:13px" id="fontLabel">字体</span>
+    <button id="fMinus">A−</button>
+    <button id="fPlus">A+</button>
+  </div>
+  <div class="view-body" id="vLyrics"></div>
+</div>
+
+<nav class="tabbar">
+  <button class="tab active" data-page="search" id="tabSearch">
+    <span class="icon">🔍</span>
+    <span id="tabSearchLabel">搜索</span>
+  </button>
+  <button class="tab" data-page="library" id="tabLibrary">
+    <span class="icon">📚</span>
+    <span id="tabLibraryLabel">我的</span>
+  </button>
+</nav>
+
+<script>
+const T = {
+  zh: {
+    appTitle:"歌词库", tabSearch:"搜索", tabLibrary:"我的",
+    secSearch:"在线搜索", secManual:"手动添加",
+    qPh:"歌名 / 歌手名", search:"搜索", searching:"搜索中…",
+    mArtist:"歌手", mTitle:"歌名", mLyrics:"粘贴歌词",
+    manualSave:"保存到歌词库", save:"保存", saved:"已保存",
+    del:"删除", back:"‹ 返回", font:"字体",
+    libPh:"搜索标题 / 歌手 / 歌词", empty:"还没有歌词",
+    needQ:"请输入歌名或歌手", noRes:"没找到结果", found:n=>`找到 ${n} 首`,
+    err:"搜索失败", okSave:"已保存", needAll:"请填写完整", okManual:"保存成功",
+    confirm:"确定删除？", unk:"未知", all:"全部", fav:"收藏", noCat:"无分类"
+  },
+  en: {
+    appTitle:"Lyrics", tabSearch:"Search", tabLibrary:"Library",
+    secSearch:"Online Search", secManual:"Manual Add",
+    qPh:"Title / Artist", search:"Search", searching:"Searching…",
+    mArtist:"Artist", mTitle:"Title", mLyrics:"Paste lyrics",
+    manualSave:"Save to Library", save:"Save", saved:"Saved",
+    del:"Delete", back:"‹ Back", font:"Font",
+    libPh:"Search title / artist / lyrics", empty:"No lyrics yet",
+    needQ:"Enter title or artist", noRes:"No results", found:n=>`Found ${n}`,
+    err:"Search failed", okSave:"Saved", needAll:"Please fill all", okManual:"Saved",
+    confirm:"Delete this song?", unk:"Unknown", all:"All", fav:"Favorites", noCat:"No category"
+  }
+};
+
+let lang = localStorage.getItem("ly_lang") || "zh";
+function t(k){ const v=T[lang][k]; return typeof v==="function"?v:v; }
+function apply(){
+  document.getElementById("appTitle").textContent=t("appTitle");
+  document.getElementById("tabSearchLabel").textContent=t("tabSearch");
+  document.getElementById("tabLibraryLabel").textContent=t("tabLibrary");
+  document.getElementById("secSearch").textContent=t("secSearch");
+  document.getElementById("secManual").textContent=t("secManual");
+  document.getElementById("q").placeholder=t("qPh");
+  document.getElementById("btnSearch").textContent=t("search");
+  document.getElementById("mArtist").placeholder=t("mArtist");
+  document.getElementById("mTitle").placeholder=t("mTitle");
+  document.getElementById("mLyrics").placeholder=t("mLyrics");
+  document.getElementById("btnManual").textContent=t("manualSave");
+  document.getElementById("btnSave").textContent=t("save");
+  document.getElementById("btnDel").textContent=t("del");
+  document.getElementById("btnBack").textContent=t("back");
+  document.getElementById("fontLabel").textContent=t("font");
+  document.getElementById("libQ").placeholder=t("libPh");
+  document.getElementById("emptyText").textContent=t("empty");
+  document.getElementById("langBtn").textContent=lang==="zh"?"EN":"中文";
+  // update chips
+  const chips=document.querySelectorAll("#filterRow .chip");
+  if(chips[0]) chips[0].textContent=t("all");
+  if(chips[1]) chips[1].textContent=t("fav");
+}
+document.getElementById("langBtn").onclick=()=>{
+  lang=lang==="zh"?"en":"zh";
+  localStorage.setItem("ly_lang",lang);
+  apply();
+  renderLib();
+};
+
+const KEY="ly_lib_v4";
+const CAT_KEY="ly_cats_v1";
+function load(){ try{return JSON.parse(localStorage.getItem(KEY))||[];}catch{return[];} }
+function save(arr){ localStorage.setItem(KEY,JSON.stringify(arr)); }
+function loadCats(){ try{return JSON.parse(localStorage.getItem(CAT_KEY))||["流行","经典","练歌"];}catch{return["流行","经典","练歌"];} }
+function saveCats(c){ localStorage.setItem(CAT_KEY,JSON.stringify(c)); }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
+
+function fillCatSelects(){
+  const cats=loadCats();
+  ["cardCat","mCat"].forEach(id=>{
+    const sel=document.getElementById(id);
+    const cur=sel.value;
+    sel.innerHTML=`<option value="">${t("noCat")}</option>`;
+    cats.forEach(c=>{
+      const o=document.createElement("option");
+      o.value=c; o.textContent=c;
+      sel.appendChild(o);
+    });
+    // add new option
+    const o2=document.createElement("option");
+    o2.value="__new__"; o2.textContent="+ 新建分类";
+    sel.appendChild(o2);
+    if(cur && cats.includes(cur)) sel.value=cur;
+  });
+}
+fillCatSelects();
+
+["cardCat","mCat"].forEach(id=>{
+  document.getElementById(id).onchange=function(){
+    if(this.value==="__new__"){
+      const name=prompt(lang==="zh"?"输入新分类名称：":"New category name:");
+      if(name && name.trim()){
+        const cats=loadCats();
+        if(!cats.includes(name.trim())){
+          cats.push(name.trim());
+          saveCats(cats);
+        }
+        fillCatSelects();
+        this.value=name.trim();
+      } else {
+        this.value="";
+      }
+    }
+  };
+});
+
+function go(page){
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  if(page==="search"){
+    document.getElementById("pageSearch").classList.add("active");
+    document.getElementById("tabSearch").classList.add("active");
+  } else if(page==="library"){
+    document.getElementById("pageLibrary").classList.add("active");
+    document.getElementById("tabLibrary").classList.add("active");
+    renderLib();
+  } else if(page==="view"){
+    document.getElementById("pageView").classList.add("active");
+  }
+}
+document.querySelectorAll(".tab").forEach(btn=>{
+  btn.onclick=()=>go(btn.dataset.page);
+});
+
+let cur=null;
+let cardFav=false, mFav=false;
+
+document.getElementById("cardStar").onclick=function(){
+  cardFav=!cardFav;
+  this.textContent=cardFav?"★":"☆";
+  this.classList.toggle("on",cardFav);
+};
+document.getElementById("mStar").onclick=function(){
+  mFav=!mFav;
+  this.textContent=mFav?"★":"☆";
+  this.classList.toggle("on",mFav);
+};
+
+function status(el,msg,type){
+  el.textContent=msg;
+  el.className="status show "+type;
+}
+
+document.getElementById("btnSearch").onclick=async()=>{
+  const q=document.getElementById("q").value.trim();
+  const st=document.getElementById("statusSearch");
+  const list=document.getElementById("resultList");
+  const card=document.getElementById("lyricsCard");
+  const btn=document.getElementById("btnSearch");
+  if(!q){ status(st,t("needQ"),"err"); return; }
+  btn.disabled=true; btn.textContent=t("searching");
+  st.className="status"; list.innerHTML=""; card.classList.remove("show"); cur=null;
+  try{
+    // try both general search and artist focused
+    const url1=`https://lrclib.net/api/search?q=${encodeURIComponent(q)}`;
+    const url2=`https://lrclib.net/api/search?artist_name=${encodeURIComponent(q)}`;
+    const [r1,r2]=await Promise.all([fetch(url1),fetch(url2)]);
+    const d1=await r1.json();
+    const d2=await r2.json();
+    const map=new Map();
+    [...(d1||[]),...(d2||[])].forEach(s=>{
+      if(s.plainLyrics && s.plainLyrics.length>15){
+        map.set(s.id|| (s.trackName+s.artistName), s);
+      }
+    });
+    const items=[...map.values()];
+    if(!items.length){
+      status(st,t("noRes"),"err");
+    } else {
+      status(st,t("found")(items.length),"ok");
+      items.slice(0,12).forEach(s=>{
+        const d=document.createElement("div");
+        d.className="item";
+        d.innerHTML=`<div class="item-info"><h3>${esc(s.trackName||t("unk"))}</h3><p>${esc(s.artistName||t("unk"))}</p></div>`;
+        d.onclick=()=>{
+          cur={ title:s.trackName||t("unk"), artist:s.artistName||t("unk"), lyrics:s.plainLyrics.trim() };
+          document.getElementById("cardTitle").textContent=cur.title;
+          document.getElementById("cardArtist").textContent=cur.artist;
+          document.getElementById("cardLyrics").textContent=cur.lyrics;
+          cardFav=false;
+          document.getElementById("cardStar").textContent="☆";
+          document.getElementById("cardStar").classList.remove("on");
+          document.getElementById("cardCat").value="";
+          card.classList.add("show");
+          card.scrollIntoView({behavior:"smooth",block:"nearest"});
+        };
+        list.appendChild(d);
+      });
+    }
+  }catch(e){
+    status(st,t("err"),"err");
+  }
+  btn.disabled=false; btn.textContent=t("search");
+};
+document.getElementById("q").onkeydown=e=>{ if(e.key==="Enter") document.getElementById("btnSearch").click(); };
+
+document.getElementById("btnSave").onclick=function(){
+  if(!cur) return;
+  const cat=document.getElementById("cardCat").value;
+  add(cur.artist, cur.title, cur.lyrics, cat, cardFav);
+  status(document.getElementById("statusSearch"), t("okSave"), "ok");
+  this.textContent=t("saved");
+  setTimeout(()=>this.textContent=t("save"),1000);
+};
+
+document.getElementById("btnManual").onclick=()=>{
+  const a=document.getElementById("mArtist").value.trim();
+  const ti=document.getElementById("mTitle").value.trim();
+  const l=document.getElementById("mLyrics").value.trim();
+  const cat=document.getElementById("mCat").value;
+  const st=document.getElementById("statusManual");
+  if(!a||!ti||!l){ status(st,t("needAll"),"err"); return; }
+  add(a,ti,l,cat,mFav);
+  status(st,t("okManual"),"ok");
+  document.getElementById("mArtist").value="";
+  document.getElementById("mTitle").value="";
+  document.getElementById("mLyrics").value="";
+  mFav=false;
+  document.getElementById("mStar").textContent="☆";
+  document.getElementById("mStar").classList.remove("on");
+};
+
+function add(artist,title,lyrics,category,favorite){
+  const arr=load();
+  const i=arr.findIndex(s=>s.artist.toLowerCase()===artist.toLowerCase() && s.title.toLowerCase()===title.toLowerCase());
+  const item={
+    id: i>=0 ? arr[i].id : uid(),
+    artist, title, lyrics,
+    category: category||"",
+    favorite: !!favorite,
+    t: Date.now()
+  };
+  if(i>=0) arr[i]=item; else arr.unshift(item);
+  save(arr);
+}
+
+let currentFilter="all";
+document.getElementById("filterRow").onclick=e=>{
+  if(e.target.classList.contains("chip")){
+    document.querySelectorAll("#filterRow .chip").forEach(c=>c.classList.remove("on"));
+    e.target.classList.add("on");
+    currentFilter=e.target.dataset.filter;
+    renderLib();
+  }
+};
+
+function renderLib(){
+  const arr=load();
+  const kw=(document.getElementById("libQ").value||"").toLowerCase();
+  let list=arr;
+  if(currentFilter==="fav") list=list.filter(s=>s.favorite);
+  else if(currentFilter!=="all") list=list.filter(s=>s.category===currentFilter);
+
+  if(kw){
+    list=list.filter(s=>
+      s.title.toLowerCase().includes(kw) ||
+      s.artist.toLowerCase().includes(kw) ||
+      (s.lyrics||"").toLowerCase().includes(kw)
+    );
+  }
+
+  // rebuild category chips
+  const cats=loadCats();
+  const row=document.getElementById("filterRow");
+  row.innerHTML=`<button class="chip ${currentFilter==="all"?"on":""}" data-filter="all">${t("all")}</button>
+    <button class="chip ${currentFilter==="fav"?"on":""}" data-filter="fav">${t("fav")}</button>`;
+  cats.forEach(c=>{
+    const b=document.createElement("button");
+    b.className="chip"+(currentFilter===c?" on":"");
+    b.dataset.filter=c;
+    b.textContent=c;
+    row.appendChild(b);
+  });
+
+  const el=document.getElementById("libList");
+  const empty=document.getElementById("empty");
+  el.innerHTML="";
+  if(!list.length){ empty.style.display="block"; return; }
+  empty.style.display="none";
+  list.forEach(s=>{
+    const d=document.createElement("div");
+    d.className="item";
+    d.innerHTML=`<div class="item-info">
+      <h3>${esc(s.title)}</h3>
+      <p>${esc(s.artist)}${s.category?` · ${esc(s.category)}`:""}</p>
+    </div>
+    <span class="star ${s.favorite?"on":""}">${s.favorite?"★":"☆"}</span>`;
+    d.onclick=()=>openView(s);
+    el.appendChild(d);
+  });
+}
+document.getElementById("libQ").oninput=()=>renderLib();
+
+function esc(s){ return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+let vid=null, fsize=17;
+function openView(s){
+  vid=s.id;
+  document.getElementById("vTitle").textContent=s.title;
+  document.getElementById("vArtist").textContent=s.artist;
+  document.getElementById("vLyrics").textContent=s.lyrics;
+  document.getElementById("vLyrics").style.fontSize=fsize+"px";
+  const tag=document.getElementById("vTag");
+  if(s.category){ tag.style.display="inline-block"; tag.textContent=s.category; }
+  else tag.style.display="none";
+  const star=document.getElementById("vStar");
+  star.textContent=s.favorite?"★":"☆";
+  star.classList.toggle("on",!!s.favorite);
+  go("view");
+}
+document.getElementById("btnBack").onclick=()=>go("library");
+document.getElementById("btnDel").onclick=()=>{
+  if(!vid) return;
+  if(!confirm(t("confirm"))) return;
+  save(load().filter(s=>s.id!==vid));
+  go("library");
+};
+document.getElementById("vStar").onclick=function(){
+  const arr=load();
+  const i=arr.findIndex(s=>s.id===vid);
+  if(i<0) return;
+  arr[i].favorite=!arr[i].favorite;
+  save(arr);
+  this.textContent=arr[i].favorite?"★":"☆";
+  this.classList.toggle("on",arr[i].favorite);
+};
+document.getElementById("fMinus").onclick=()=>{ if(fsize>13){fsize--; document.getElementById("vLyrics").style.fontSize=fsize+"px";} };
+document.getElementById("fPlus").onclick=()=>{ if(fsize<26){fsize++; document.getElementById("vLyrics").style.fontSize=fsize+"px";} };
+
+apply();
+renderLib();
+</script>
+</body>
+</html>
